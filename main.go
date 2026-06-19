@@ -3,8 +3,9 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"go-mod-cli/storage"
+	"go-mod-cli/todo"
 	"os"
-	"strings"
 	"time"
 )
 
@@ -12,63 +13,36 @@ import (
 // load json file and add it to todo service.
 // when we close the application defer save json file.
 
+var Storage storage.JsonStorage
+
 type Todo struct {
 	title       string
 	description string
 	createdAt   string
 }
 
-var todos []Todo
-
-func (t *Todo) Add() (string, error) {
-	scanner := bufio.NewScanner(os.Stdin)
-
-	fmt.Println("Adding todo")
-
-	fmt.Print("title : ")
-	scanner.Scan()
-	t.title = scanner.Text()
-
-	fmt.Print("description : ")
-	scanner.Scan()
-	t.description = scanner.Text()
-
-	t.createdAt = time.Now().String()
-
-	todos = append(todos, *t)
-
-	return "successfully added.", nil
-}
-
-func Search(input string) (n int, ok bool) {
-	n = 0
-	ok = false
-
-	for i, todo := range todos {
-		if input == todo.title {
-			n , ok = i, true
-			break 
-		}
-	}
-
-	return
-}
-
 func main() {
 	args := os.Args
+
+	var storage storage.JsonStorage
+	var todos []todo.Todo
+	var service todo.Service
 
 	if len(args) < 3 {
 		fmt.Println("cmd must : ./main todo run")
 		return
 	}
 
+	storage.Filepath = "data/data.json"
+	storage.Load(&todos)
+	service = todo.Service{}
+
 	scanner := bufio.NewScanner(os.Stdin)
 
 	for {
-
 		fmt.Println("Task Management cli")
 		fmt.Println("Options : ")
-		fmt.Print("1. add \n2. delete \n3. update \n4. display all todos \n5. exit \nEnter the Option:")
+		fmt.Print("1. add \n2. delete \n3. update \n4. display all todos \n5. search \n6. exit \nEnter the Option:")
 
 		scanner.Scan()
 		if err := scanner.Err(); err != nil {
@@ -77,95 +51,82 @@ func main() {
 		}
 
 		switch op := scanner.Text(); op {
-
 		case "1":
+			{
 
-			var todo Todo
-			str, err := todo.Add()
+				fmt.Println("Adding todo")
+				todo := todo.Todo{}
 
-			if err != nil {
-				fmt.Println(err.Error())
-			}
-
-			fmt.Println(str)
-
-		case "2":
-			fmt.Print("Enter the title of the todo to delete :")
-			
-			scanner.Scan()
-			title := strings.TrimSpace(scanner.Text())
-			idx, ok := Search(title)
-
-			if !ok {
-				fmt.Println("todo not found.")
-				break
-			}
-
-			todos = append(todos[:idx], todos[idx + 1:]...)
-			
-			fmt.Println("\nsuccessfully deleted.")
-		case "3":
-			fmt.Print("Enter the title of the todo to update :")
-			
-			scanner.Scan()
-			title := strings.TrimSpace(scanner.Text())
-			idx, ok := Search(title)
-
-			if !ok {
-				fmt.Println("todo not found.")
-				break
-			}
-			for {
-
-				fmt.Println("which one do you wanna update : ")
-				fmt.Print("1. title only \n2. description only \n3.both \nEnter the Option:")
-
-				ok := true
+				fmt.Print("title : ")
 
 				scanner.Scan()
-				switch up := scanner.Text(); up { 
-				case "1":
-					fmt.Print("Enter the new title : ")
-					scanner.Scan()
-					todos[idx].title = strings.TrimSpace(scanner.Text())
+				todo.Title = scanner.Text()
 
-				case "2":
-					fmt.Print("Enter the new description : ")
-					scanner.Scan()
-					todos[idx].description = strings.TrimSpace(scanner.Text())
-				
-				case "3":
-					fmt.Print("Enter the new title : ")
-					scanner.Scan()
-					todos[idx].title = strings.TrimSpace(scanner.Text())
-					
-					fmt.Print("Enter the new title : ")
-					scanner.Scan()
-					todos[idx].description = strings.TrimSpace(scanner.Text())
+				fmt.Print("description : ")
+				scanner.Scan()
+				todo.Description = scanner.Text()
 
-				default:
-					ok = false
-					fmt.Println("no such option.")
-				}
+				todo.CreatedAt = time.Now()
 
-				if ok {
-					fmt.Println("\nsuccessfully updated.")
+				str, err := service.Add(todo)
+
+				if err != nil {
+					fmt.Printf(err.Error())
 					break
 				}
-			
+
+				fmt.Println(str)
 			}
 
+		case "2":
+			{
+				fmt.Println("Delete todo")
+
+				fmt.Print("title : ")
+
+				scanner.Scan()
+				title := scanner.Text()
+
+				str, err := service.Delete(title)
+
+				if err != nil {
+					fmt.Printf(err.Error())
+					break
+				}
+
+				fmt.Println(str)
+			}
+		case "3":
+			{
+				fmt.Println("update")
+			}
 		case "4":
-			fmt.Println("\n------------------------------")
-			for _, todo := range todos {
-				fmt.Printf("title : %s \ndescription : %s \n", todo.title, todo.description)
-				fmt.Println("\n------------------------------")
-			}
-		case "5":
-			os.Exit(1)
-		default:
-			fmt.Println("no such option.")
-		}
-	}
+			{
+				todos, err := service.List()
+				if err != nil {
+					fmt.Printf(err.Error())
+					break
+				}
 
+				if len(todos) == 0 {
+					fmt.Println("No todos are there.")
+					break
+				}
+
+				fmt.Println("\n------------------------------")
+				for _, todo := range todos {
+					fmt.Printf("title : %s \ndescription : %s \n", todo.Title, todo.Description)
+					fmt.Println("\n------------------------------")
+				}
+			}
+		case "5": 
+		{
+			fmt.Println("search")
+		}	
+		case "6" : {
+			os.Exit(1)
+		}
+		}
+
+	}
 }

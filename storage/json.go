@@ -16,13 +16,17 @@ func (j *JsonStorage) Load(todos *[]todo.Todo) ( error) {
 	data, err := os.ReadFile(j.Filepath)
 	
 	if err != nil {
+		if os.IsNotExist(err) {
+			*todos = []todo.Todo{}
+			return nil
+		}
 		return fmt.Errorf("reading file %s : %w", j.Filepath, err)
 	}
 
-	data_err := json.Unmarshal(data, todos)
+	err = json.Unmarshal(data, todos)
 
-	if data_err != nil {
-		return fmt.Errorf("failed conversion : %w",data_err)
+	if err != nil {
+		return fmt.Errorf("failed conversion : %w",err)
 	}
 
 	return nil
@@ -30,13 +34,13 @@ func (j *JsonStorage) Load(todos *[]todo.Todo) ( error) {
 
 func (j *JsonStorage) Save(todos []todo.Todo) error {
 	
-	byte_data, err := json.Marshal(todos)
+	data, err := json.Marshal(todos)
 
 	if err != nil {
 		return fmt.Errorf("failed conversion : %w",err)
 	}
 
-	err = os.WriteFile(j.Filepath, byte_data, 0777)
+	err = os.WriteFile(j.Filepath, data, 0644)
 
 	if err != nil {
 		return fmt.Errorf("Failed to write : %w", err)

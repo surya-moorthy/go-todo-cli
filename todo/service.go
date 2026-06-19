@@ -5,6 +5,7 @@ type Service struct {
 }
 
 func (s *Service) Add(t Todo) (string, error) {
+	s.todos = append(s.todos, t)
 	
 }
 func (s *Service) Delete(title string) (string, error) {}
