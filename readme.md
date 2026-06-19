@@ -4,6 +4,9 @@
 - Each todo has a title and description.
 - this tool is built not because it is easier but to build a CLI in golang with necessary fundamentals.
 
+## How to Run?
+- give a command ```go run main.go todo run``` in the terminal. 
+
 ## Operations
 - **Add** : adds a todo by getting title and description as input data.
 - **Update** : updates a todo by getting title of the todo the user wants to update and new data.
