@@ -1,8 +1,8 @@
 package storage
 
-import "go-mod-cli/todo"
+import "go-mod-cli/model"
 
 type Storage interface {
-	Load() ([]todo.Todo, error)
-	Save([]todo.Todo) error
+	Load() ([]model.Todo, error)
+	Save([]model.Todo) error
 }

@@ -3,7 +3,7 @@ package storage
 import (
 	"encoding/json"
 	"fmt"
-	"go-mod-cli/todo"
+	"go-mod-cli/model"
 	"os"
 )
 
@@ -11,33 +11,37 @@ type JsonStorage struct {
 	Filepath string
 }
 
-func (j *JsonStorage) Load(todos *[]todo.Todo) ( error) {
+func (j *JsonStorage) Load() ([]model.Todo, error) {
 
 	data, err := os.ReadFile(j.Filepath)
-	
+
 	if err != nil {
 		if os.IsNotExist(err) {
-			*todos = []todo.Todo{}
-			return nil
+			return []model.Todo{}, nil
 		}
-		return fmt.Errorf("reading file %s : %w", j.Filepath, err)
+		return nil,fmt.Errorf("reading file %s : %w", j.Filepath, err)
 	}
 
-	err = json.Unmarshal(data, todos)
+	if len(data) == 0 {
+		return []model.Todo{}, nil
+	}
+	var todos []model.Todo
+
+	err = json.Unmarshal(data, &todos)
 
 	if err != nil {
-		return fmt.Errorf("failed conversion : %w",err)
+		return nil,fmt.Errorf("failed conversion : %w", err)
 	}
 
-	return nil
-} 
+	return todos,nil
+}
 
-func (j *JsonStorage) Save(todos []todo.Todo) error {
-	
+func (j *JsonStorage) Save(todos []model.Todo) error {
+
 	data, err := json.Marshal(todos)
 
 	if err != nil {
-		return fmt.Errorf("failed conversion : %w",err)
+		return fmt.Errorf("failed conversion : %w", err)
 	}
 
 	err = os.WriteFile(j.Filepath, data, 0644)

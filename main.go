@@ -3,9 +3,11 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"go-mod-cli/model"
 	"go-mod-cli/storage"
 	"go-mod-cli/todo"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -24,18 +26,27 @@ type Todo struct {
 func main() {
 	args := os.Args
 
-	var storage storage.JsonStorage
-	var todos []todo.Todo
-	var service todo.Service
+	var Storage storage.JsonStorage
+	var todos []model.Todo
+	var Service todo.Service
 
 	if len(args) < 3 {
 		fmt.Println("cmd must : ./main todo run")
 		return
 	}
 
-	storage.Filepath = "data/data.json"
-	storage.Load(&todos)
-	service = todo.Service{}
+	Storage.Filepath = "./data/data.json"
+	todos, err := Storage.Load()
+
+	if err != nil {
+		 fmt.Println(err.Error())
+		 return
+	}
+
+	Service = todo.Service{}
+
+	Service.Storage = &Storage
+	Service.Todos = todos
 
 	scanner := bufio.NewScanner(os.Stdin)
 
@@ -55,7 +66,7 @@ func main() {
 			{
 
 				fmt.Println("Adding todo")
-				todo := todo.Todo{}
+				todo := model.Todo{}
 
 				fmt.Print("title : ")
 
@@ -68,10 +79,10 @@ func main() {
 
 				todo.CreatedAt = time.Now()
 
-				str, err := service.Add(todo)
+				str, err := Service.Add(todo)
 
 				if err != nil {
-					fmt.Printf(err.Error())
+					fmt.Printf("%s", err.Error())
 					break
 				}
 
@@ -87,10 +98,10 @@ func main() {
 				scanner.Scan()
 				title := scanner.Text()
 
-				str, err := service.Delete(title)
+				str, err := Service.Delete(title)
 
 				if err != nil {
-					fmt.Printf(err.Error())
+					fmt.Printf("%s", err.Error())
 					break
 				}
 
@@ -98,13 +109,57 @@ func main() {
 			}
 		case "3":
 			{
-				fmt.Println("update")
+				fmt.Print("todo Title to update : ")
+				scanner.Scan()
+				title := scanner.Text()
+				todo, err := Service.Search(title)
+
+				if err != nil {
+					fmt.Printf("%s", err.Error())
+					break
+				}
+
+				fmt.Println("which one do you wanna update : ")
+				fmt.Print("1. title only \n2. description only \n3.both \nEnter the Option:")
+
+				scanner.Scan()
+				switch up := scanner.Text(); up { 
+				case "1":
+					fmt.Print("Enter the new title : ")
+					scanner.Scan()
+					todo.Title = strings.TrimSpace(scanner.Text())
+
+				case "2":
+					fmt.Print("Enter the new description : ")
+					scanner.Scan()
+					todo.Description = strings.TrimSpace(scanner.Text())
+				
+				case "3":
+					fmt.Print("Enter the new title : ")
+					scanner.Scan()
+					todo.Title = strings.TrimSpace(scanner.Text())
+					
+					fmt.Print("Enter the new description : ")
+					scanner.Scan()
+					todo.Description = strings.TrimSpace(scanner.Text())
+				default :
+					fmt.Println("No such option.")
+				}
+
+				str, updateErr := Service.Update(title, todo)
+
+				if updateErr != nil {
+					fmt.Printf("%s", updateErr.Error())
+					break
+				}
+
+				fmt.Println(str)
 			}
 		case "4":
 			{
-				todos, err := service.List()
+				todos, err := Service.List()
 				if err != nil {
-					fmt.Printf(err.Error())
+					fmt.Printf("%s", err.Error())
 					break
 				}
 
@@ -121,7 +176,19 @@ func main() {
 			}
 		case "5": 
 		{
-			fmt.Println("search")
+			fmt.Print("todo Title to update : ")
+			scanner.Scan()
+			title := scanner.Text()
+			todo, err := Service.Search(title)
+
+			if err != nil {
+				fmt.Printf("%s", err.Error())
+				break
+			}
+
+			fmt.Println("\n------------------------------")
+			fmt.Printf("title : %s \ndescription : %s \n", todo.Title, todo.Description)
+			fmt.Println("\n------------------------------")
 		}	
 		case "6" : {
 			os.Exit(1)
