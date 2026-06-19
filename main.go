@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+// initiate todo service
+// load json file and add it to todo service.
+// when we close the application defer save json file.
+
 type Todo struct {
 	title       string
 	description string
